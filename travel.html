@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智遊旅程 - 你的專屬旅遊規劃助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2 text-indigo-600 font-bold text-xl">
+                <i class="fa-solid fa-route"></i>
+                <span>智遊旅程 Planner</span>
+            </div>
+            <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg">
+                <button id="tab-itinerary" onclick="switchPage('itinerary')" class="px-4 py-2 rounded-md font-medium text-sm transition-all bg-indigo-600 text-white shadow-sm">
+                    <i class="fa-solid fa-calendar-days mr-1"></i> 行程規劃
+                </button>
+                <button id="tab-accommodation" onclick="switchPage('accommodation')" class="px-4 py-2 rounded-md font-medium text-sm transition-all text-slate-600 hover:text-indigo-600">
+                    <i class="fa-solid fa-hotel mr-1"></i> 住宿尋找
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+
+        <div id="page-itinerary" class="space-y-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">📍 出發地</label>
+                    <input type="text" id="start-location" placeholder="例如：台北車站、桃園機場..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">🎯 目的地</label>
+                    <input type="text" id="dest-location" placeholder="例如：東京、京都、北海道..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div id="days-container" class="space-y-6">
+                </div>
+
+            <div class="text-center">
+                <button onclick="addNewDay()" class="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-colors cursor-pointer">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>新增下一天行程</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="page-accommodation" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                    <i class="fa-solid fa-hotel text-indigo-600 mr-2"></i> 旅宿口袋名單
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">飯店/旅宿名稱</label>
+                        <input type="text" id="hotel-name" placeholder="請輸入飯店名稱或點擊右側於地圖搜尋" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="searchOnMap('hotel')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2.5 rounded-xl transition-colors inline-flex justify-center items-center space-x-2 cursor-pointer h-[46px]">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <span>在 Google 地圖搜尋住宿</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">入住備註 (例如：房型、價格、入退房時間)</label>
+                    <textarea id="hotel-notes" rows="2" placeholder="填寫此住宿的相關資訊..." class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <button onclick="addHotelToList()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer">
+                    加入住宿清單
+                </button>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">已規劃的住宿</h3>
+                <div id="hotel-list" class="space-y-3 text-slate-500 italic">
+                    尚未新增任何住宿。
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let dayCount = 0;
+
+        // 頁籤切換邏輯
+        function switchPage(page) {
+            const btnItinerary = document.getElementById('tab-itinerary');
+            const btnAccommodation = document.getElementById('tab-accommodation');
+            const pageItinerary = document.getElementById('page-itinerary');
+            const pageAccommodation = document.getElementById('page-accommodation');
+
+            if (page === 'itinerary') {
+                pageItinerary.classList.remove('hidden');
+                pageAccommodation.classList.add('hidden');
+                btnItinerary.className = "px-4 py-2 rounded-md font-medium text-sm transition-all bg-indigo-600 text-white shadow-sm";
+                btnAccommodation.className = "px-4 py-2 rounded-md font-medium text-sm transition-all text-slate-600 hover:text-indigo-600";
+            } else {
+                pageItinerary.classList.add('hidden');
+                pageAccommodation.classList.remove('hidden');
+                btnAccommodation.className = "px-4 py-2 rounded-md font-medium text-sm transition-all bg-indigo-600 text-white shadow-sm";
+                btnItinerary.className = "px-4 py-2 rounded-md font-medium text-sm transition-all text-slate-600 hover:text-indigo-600";
+            }
+        }
+
+        // 串接 Google 地圖搜尋 (開啟新視窗)
+        function searchOnMap(type, elementId = '') {
+            let query = '';
+            if (type === 'hotel') {
+                query = document.getElementById('hotel-name').value || '飯店 住宿';
+            } else if (elementId) {
+                query = document.getElementById(elementId).value || '景點 餐廳';
+            }
+            
+            // 加上目的地輔助搜尋
+            const dest = document.getElementById('dest-location').value;
+            if (dest) query = `${dest} ${query}`;
+
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+            window.open(mapUrl, '_blank');
+        }
+
+        // 動態新增天數
+        function addNewDay() {
+            dayCount++;
+            const container = document.getElementById('days-container');
+            
+            const dayHtml = `
+                <div id="day-card-${dayCount}" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-100 px-6 py-4 flex justify-between items-center border-b border-slate-200">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-flag text-indigo-500 mr-2"></i> 第 ${dayCount} 天行程
+                        </h3>
+                        <button onclick="removeDay(${dayCount})" class="text-rose-500 hover:text-rose-700 text-sm font-medium">
+                            刪除此天
+                        </button>
+                    </div>
+                    
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">📍 景點與活動 (無限新增)</h4>
+                            <div id="day-${dayCount}-spots" class="space-y-4">
+                                </div>
+                            <button onclick="addSpotRow(${dayCount})" class="mt-3 inline-flex items-center space-x-1 text-sm text-indigo-600 hover:text-indigo-700 font-semibold cursor-pointer">
+                                <i class="fa-solid fa-circle-plus"></i> <span>新增景點/地點</span>
+                            </button>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">🍽️ 用餐規劃</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100">
+                                    <span class="block text-xs font-bold text-amber-700 mb-1">🌅 早餐時間</span>
+                                    <input type="text" placeholder="預計用餐地點..." class="w-full px-3 py-1.5 text-sm bg-white rounded-lg border border-slate-200 focus:outline-none">
+                                </div>
+                                <div class="bg-orange-50/50 p-3 rounded-xl border border-orange-100">
+                                    <span class="block text-xs font-bold text-orange-700 mb-1">☀️ 午餐時間</span>
+                                    <input type="text" placeholder="預計用餐地點..." class="w-full px-3 py-1.5 text-sm bg-white rounded-lg border border-slate-200 focus:outline-none">
+                                </div>
+                                <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                    <span class="block text-xs font-bold text-indigo-700 mb-1">🌙 晚餐時間</span>
+                                    <input type="text" placeholder="預計用餐地點..." class="w-full px-3 py-1.5 text-sm bg-white rounded-lg border border-slate-200 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', dayHtml);
+            // 預設幫新的一天加上第一個景點欄位
+            addSpotRow(dayCount);
+        }
+
+        // 刪除整天
+        function removeDay(dayId) {
+            document.getElementById(`day-card-${dayId}`).remove();
+        }
+
+        // 在特定天數內新增單一景點 row
+        let spotUniqueId = 0;
+        function addSpotRow(dayId) {
+            spotUniqueId++;
+            const spotContainer = document.getElementById(`day-${dayId}-spots`);
+            
+            const spotHtml = `
+                <div id="spot-row-${spotUniqueId}" class="flex flex-col md:flex-row items-start md:items-end gap-3 bg-slate-50 p-4 rounded-xl relative border border-slate-200/60">
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">地點名稱</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="input-spot-${spotUniqueId}" placeholder="請輸入或點右側搜尋" class="w-full px-3 py-2 text-sm bg-white rounded-lg border border-slate-200 focus:outline-none">
+                            <button onclick="searchOnMap('spot', 'input-spot-${spotUniqueId}')" title="跳轉至Google地圖搜尋" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap">
+                                <i class="fa-solid fa-map-marked-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-48">
+                        <label class="block text-xs font-medium text-slate-500 mb-1">預計停留時間</label>
+                        <select class="w-full px-3 py-2 text-sm bg-white rounded-lg border border-slate-200 focus:outline-none">
+                            <option>30 分鐘</option>
+                            <option selected>1 小時</option>
+                            <option>1.5 小時</option>
+                            <option>2 小時</option>
+                            <option>3 小時</option>
+                            <option>半天 (4+ 小時)</option>
+                        </select>
+                    </div>
+                    <button onclick="document.getElementById('spot-row-${spotUniqueId}').remove()" class="text-slate-400 hover:text-rose-500 p-2 cursor-pointer self-center md:self-end">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            spotContainer.insertAdjacentHTML('beforeend', spotHtml);
+        }
+
+        // 新增住宿到清單
+        function addHotelToList() {
+            const name = document.getElementById('hotel-name').value;
+            const notes = document.getElementById('hotel-notes').value;
+            
+            if (!name) {
+                alert('請輸入旅宿名稱！');
+                return;
+            }
+
+            const hotelList = document.getElementById('hotel-list');
+            if (hotelList.innerHTML.includes('尚未新增任何住宿')) {
+                hotelList.innerHTML = '';
+            }
+
+            const hotelHtml = `
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-bed text-indigo-500 mr-2"></i> ${name}
+                        </h4>
+                        ${notes ? `<p class="text-sm text-slate-600 mt-1 pl-6">${notes}</p>` : ''}
+                    </div>
+                    <button onclick="this.parentElement.remove(); checkHotelListEmpty();" class="text-slate-400 hover:text-rose-500">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `;
+            hotelList.insertAdjacentHTML('beforeend', hotelHtml);
+            
+            // 清空輸入框
+            document.getElementById('hotel-name').value = '';
+            document.getElementById('hotel-notes').value = '';
+        }
+
+        function checkHotelListEmpty() {
+            const hotelList = document.getElementById('hotel-list');
+            if (hotelList.children.length === 0) {
+                hotelList.innerHTML = '尚未新增任何住宿。';
+            }
+        }
+
+        // 初始化：預設先送出第一天的行程欄位
+        addNewDay();
+    </script>
+</body>
+</html>
